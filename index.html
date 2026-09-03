@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Invités & Tables</title>
+    <!-- Tailwind CSS pour le style -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto space-y-6">
+        
+        <!-- En-tête -->
+        <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-slate-800/60 p-6 rounded-2xl border border-slate-700/50 backdrop-blur-md">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-indigo-400 to-pink-400 bg-clip-text text-transparent">
+                    Liste des Invités & Emplacements
+                </h1>
+                <p class="text-slate-400 text-sm mt-1">Consultez en un coup d'œil vos invités et leurs tables réservées.</p>
+            </div>
+            
+            <!-- Statistiques rapides -->
+            <div class="flex gap-3">
+                <div class="bg-slate-900/80 px-4 py-2 rounded-xl border border-slate-700/40 text-center">
+                    <span id="total-count" class="block text-xl font-bold text-indigo-400">0</span>
+                    <span class="text-xs text-slate-400">Invités</span>
+                </div>
+                <div class="bg-slate-900/80 px-4 py-2 rounded-xl border border-slate-700/40 text-center">
+                    <span id="tables-count" class="block text-xl font-bold text-pink-400">0</span>
+                    <span class="text-xs text-slate-400">Tables</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Barre de recherche & Filtres -->
+        <div class="relative">
+            <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"></i>
+            <input 
+                type="text" 
+                id="search-input" 
+                placeholder="Rechercher un invité ou une table..." 
+                class="w-full pl-12 pr-4 py-3.5 bg-slate-800/80 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 text-slate-200 placeholder-slate-400 transition"
+            >
+        </div>
+
+        <!-- Zone d'affichage des cartes -->
+        <main id="guests-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Chargement en cours... -->
+            <div class="col-span-full text-center py-12 text-slate-400">
+                <i data-lucide="loader-2" class="w-8 h-8 animate-spin mx-auto mb-2 text-indigo-400"></i>
+                <p>Chargement des données Supabase...</p>
+            </div>
+        </main>
+        
+    </div>
+
+    <script>
+        // --- 1. CONFIGURATION SUPABASE ---
+        const SUPABASE_URL = 'VOTRE_SUPABASE_URL';
+        const SUPABASE_ANON_KEY = 'VOTRE_SUPABASE_ANON_KEY';
+        
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let allGuests = [];
+
+        // --- 2. FONCTION DE DÉTECTION DU TYPE (Mr, Mme, Couple) ---
+        function getGuestType(name) {
+            const clean = name.trim();
+            if (/^Couple/i.test(clean)) {
+                return { label: 'Couple', color: 'bg-purple-500/10 text-purple-400 border-purple-500/20', icon: 'users' };
+            } else if (/^(Mme|Madame)/i.test(clean)) {
+                return { label: 'Madame', color: 'bg-pink-500/10 text-pink-400 border-pink-500/20', icon: 'user-check' };
+            } else {
+                return { label: 'Monsieur', color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20', icon: 'user' };
+            }
+        }
+
+        // --- 3. CHARGEMENT DES DONNÉES DEPUIS SUPABASE ---
+        async function fetchGuests() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('guests')
+                    .select('*')
+                    .order('table_name', { ascending: true });
+
+                if (error) throw error;
+
+                allGuests = data || [];
+                updateStats(allGuests);
+                renderGuests(allGuests);
+            } catch (err) {
+                console.error(err);
+                document.getElementById('guests-grid').innerHTML = `
+                    <div class="col-span-full bg-red-500/10 border border-red-500/30 text-red-400 p-4 rounded-xl text-center">
+                        Erreur de connexion à Supabase : ${err.message}
+                    </div>
+                `;
+            }
+        }
+
+        // --- 4. MISE À JOUR DES STATISTIQUES ---
+        function updateStats(guests) {
+            document.getElementById('total-count').textContent = guests.length;
+            const uniqueTables = new Set(guests.map(g => g.table_name)).size;
+            document.getElementById('tables-count').textContent = uniqueTables;
+        }
+
+        // --- 5. AFFICHAGE DES CARTES D'INVITÉS ---
+        function renderGuests(guests) {
+            const grid = document.getElementById('guests-grid');
+
+            if (guests.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-12 text-slate-500">
+                        Aucun invité trouvé.
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = guests.map(guest => {
+                const type = getGuestType(guest.name);
+                return `
+                    <div class="bg-slate-800/40 hover:bg-slate-800/80 border border-slate-700/60 p-5 rounded-2xl transition duration-200 hover:border-slate-500 flex flex-col justify-between space-y-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <h3 class="font-semibold text-lg text-slate-100">${guest.name}</h3>
+                                <p class="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                                    <i data-lucide="utensils" class="w-3.5 h-3.5 text-slate-500"></i>
+                                    ${guest.table_name || 'Table non assignée'}
+                                </p>
+                            </div>
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${type.color}">
+                                <i data-lucide="${type.icon}" class="w-3 h-3"></i>
+                                ${type.label}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Réinitialiser les icônes Lucide
+            lucide.createIcons();
+        }
+
+        // --- 6. FILTRE EN TEMPS RÉEL (RECHERCHE) ---
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const filtered = allGuests.filter(g => 
+                g.name.toLowerCase().includes(query) || 
+                (g.table_name && g.table_name.toLowerCase().includes(query))
+            );
+            renderGuests(filtered);
+        });
+
+        // Initialisation
+        fetchGuests();
+    </script>
+</body>
+</html>
