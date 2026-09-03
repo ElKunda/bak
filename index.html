@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestion des Invités & Tables</title>
-    <!-- Tailwind CSS pour le style -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -29,7 +29,7 @@
                 <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-indigo-400 to-pink-400 bg-clip-text text-transparent">
                     Liste des Invités & Emplacements
                 </h1>
-                <p class="text-slate-400 text-sm mt-1">Consultez en un coup d'œil vos invités et leurs tables réservées.</p>
+                <p class="text-slate-400 text-sm mt-1">Consultez et organisez vos invités par carte ou par table.</p>
             </div>
             
             <!-- Statistiques rapides -->
@@ -45,15 +45,29 @@
             </div>
         </header>
 
-        <!-- Barre de recherche & Filtres -->
-        <div class="relative">
-            <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"></i>
-            <input 
-                type="text" 
-                id="search-input" 
-                placeholder="Rechercher un invité ou une table..." 
-                class="w-full pl-12 pr-4 py-3.5 bg-slate-800/80 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 text-slate-200 placeholder-slate-400 transition"
-            >
+        <!-- Barre d'outils : Recherche + Bascule d'affichage -->
+        <div class="flex flex-col sm:flex-row gap-3">
+            <div class="relative flex-1">
+                <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"></i>
+                <input 
+                    type="text" 
+                    id="search-input" 
+                    placeholder="Rechercher un invité ou une table..." 
+                    class="w-full pl-12 pr-4 py-3 bg-slate-800/80 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 text-slate-200 placeholder-slate-400 transition"
+                >
+            </div>
+
+            <!-- Commutateur de vue -->
+            <div class="flex bg-slate-800/80 p-1.5 rounded-xl border border-slate-700 self-start sm:self-auto">
+                <button id="view-grid-btn" onclick="setViewMode('grid')" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition bg-indigo-600 text-white">
+                    <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                    <span>Individuel</span>
+                </button>
+                <button id="view-table-btn" onclick="setViewMode('grouped')" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition">
+                    <i data-lucide="utensils" class="w-4 h-4"></i>
+                    <span>Par Table</span>
+                </button>
+            </div>
         </div>
 
         <!-- Zone d'affichage des cartes -->
@@ -68,15 +82,15 @@
     </div>
 
     <script>
-        // --- 1. CONFIGURATION SUPABASE INTÉGRÉE ---
         const SUPABASE_URL = 'https://ioswtwteahaumpgmingq.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_faan40oD96N14XPBXfz0ow_wWfwdFoS';
         
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let allGuests = [];
+        let currentViewMode = 'grid'; // 'grid' ou 'grouped'
 
-        // --- 2. FONCTION DE DÉTECTION DU TYPE (Mr, Mme, Couple) ---
+        // Detection du type d'invité
         function getGuestType(name) {
             const clean = name.trim();
             if (/^Couple/i.test(clean)) {
@@ -88,7 +102,7 @@
             }
         }
 
-        // --- 3. CHARGEMENT DES DONNÉES DEPUIS SUPABASE ---
+        // Chargement Supabase
         async function fetchGuests() {
             try {
                 const { data, error } = await supabaseClient
@@ -100,7 +114,7 @@
 
                 allGuests = data || [];
                 updateStats(allGuests);
-                renderGuests(allGuests);
+                applyFilterAndRender();
             } catch (err) {
                 console.error(err);
                 document.getElementById('guests-grid').innerHTML = `
@@ -111,23 +125,50 @@
             }
         }
 
-        // --- 4. MISE À JOUR DES STATISTIQUES ---
         function updateStats(guests) {
             document.getElementById('total-count').textContent = guests.length;
-            const uniqueTables = new Set(guests.map(g => g.table_name)).size;
+            const uniqueTables = new Set(guests.map(g => g.table_name || 'Non assignée')).size;
             document.getElementById('tables-count').textContent = uniqueTables;
         }
 
-        // --- 5. AFFICHAGE DES CARTES D'INVITÉS ---
-        function renderGuests(guests) {
+        // Changement de mode d'affichage
+        function setViewMode(mode) {
+            currentViewMode = mode;
+            const gridBtn = document.getElementById('view-grid-btn');
+            const tableBtn = document.getElementById('view-table-btn');
+
+            if (mode === 'grid') {
+                gridBtn.className = "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition bg-indigo-600 text-white";
+                tableBtn.className = "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition";
+            } else {
+                tableBtn.className = "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition bg-indigo-600 text-white";
+                gridBtn.className = "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 transition";
+            }
+
+            applyFilterAndRender();
+        }
+
+        function applyFilterAndRender() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const filtered = allGuests.filter(g => 
+                g.name.toLowerCase().includes(query) || 
+                (g.table_name && g.table_name.toLowerCase().includes(query))
+            );
+
+            if (currentViewMode === 'grid') {
+                renderGridView(filtered);
+            } else {
+                renderGroupedView(filtered);
+            }
+        }
+
+        // Vue 1 : Grille Individuelle
+        function renderGridView(guests) {
             const grid = document.getElementById('guests-grid');
+            grid.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4";
 
             if (guests.length === 0) {
-                grid.innerHTML = `
-                    <div class="col-span-full text-center py-12 text-slate-500">
-                        Aucun invité trouvé.
-                    </div>
-                `;
+                grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500">Aucun invité trouvé.</div>`;
                 return;
             }
 
@@ -152,19 +193,67 @@
                 `;
             }).join('');
 
-            // Réinitialiser les icônes Lucide
             lucide.createIcons();
         }
 
-        // --- 6. FILTRE EN TEMPS RÉEL (RECHERCHE) ---
-        document.getElementById('search-input').addEventListener('input', (e) => {
-            const query = e.target.value.toLowerCase();
-            const filtered = allGuests.filter(g => 
-                g.name.toLowerCase().includes(query) || 
-                (g.table_name && g.table_name.toLowerCase().includes(query))
-            );
-            renderGuests(filtered);
-        });
+        // Vue 2 : Groupé par Table
+        function renderGroupedView(guests) {
+            const grid = document.getElementById('guests-grid');
+            grid.className = "grid grid-cols-1 md:grid-cols-2 gap-6";
+
+            if (guests.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500">Aucune table ou invité trouvé.</div>`;
+                return;
+            }
+
+            // Regroupement par nom de table
+            const grouped = guests.reduce((acc, guest) => {
+                const tableName = guest.table_name || 'Sans Table / Non assigné(e)';
+                if (!acc[tableName]) acc[tableName] = [];
+                acc[tableName].push(guest);
+                return acc;
+            }, {});
+
+            grid.innerHTML = Object.entries(grouped).map(([tableName, tableGuests]) => {
+                return `
+                    <div class="bg-slate-800/50 border border-slate-700/80 rounded-2xl p-5 space-y-4 shadow-lg backdrop-blur-sm">
+                        <!-- En-tête de la Table -->
+                        <div class="flex items-center justify-between pb-3 border-b border-slate-700/60">
+                            <div class="flex items-center gap-2">
+                                <div class="p-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-400">
+                                    <i data-lucide="utensils" class="w-5 h-5"></i>
+                                </div>
+                                <h2 class="font-bold text-lg text-slate-100">${tableName}</h2>
+                            </div>
+                            <span class="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs px-3 py-1 rounded-full font-semibold">
+                                ${tableGuests.length} invité${tableGuests.length > 1 ? 's' : ''}
+                            </span>
+                        </div>
+
+                        <!-- Liste des Invités de cette Table -->
+                        <ul class="space-y-2.5">
+                            ${tableGuests.map(guest => {
+                                const type = getGuestType(guest.name);
+                                return `
+                                    <li class="flex items-center justify-between p-2.5 bg-slate-900/60 rounded-xl border border-slate-800 hover:border-slate-700 transition">
+                                        <span class="text-sm text-slate-200 font-medium">${guest.name}</span>
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${type.color}">
+                                            <i data-lucide="${type.icon}" class="w-3 h-3"></i>
+                                            ${type.label}
+                                        </span>
+                                    </li>
+                                `;
+                            }).join('')}
+                        </ul>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        // Événement recherche
+        document.getElementById('search-input').addEventListener('input', applyFilterAndRender);
 
         // Initialisation
         fetchGuests();
