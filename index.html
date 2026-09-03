@@ -83,6 +83,7 @@
                     <input 
                         type="text" 
                         id="search-input" 
+                        oninput="applyFilterAndRender()"
                         placeholder="Rechercher un invité ou une table..." 
                         class="w-full pl-12 pr-4 py-3 bg-slate-800/80 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 text-slate-200 placeholder-slate-400 transition"
                     >
@@ -239,8 +240,9 @@
 
         async function fetchGuests() {
             try {
+                // Modification ici : utilisation de la table 'guest' au lieu de 'guests'
                 const { data, error } = await supabaseClient
-                    .from('guests')
+                    .from('guest')
                     .select('*')
                     .order('table_name', { ascending: true });
 
@@ -589,20 +591,17 @@
             if (!guest) return;
 
             const presence = getPresenceBadge(guest.status || guest.attending || guest.presence);
+            
+            const badgeEl = document.getElementById('modal-status-badge');
+            badgeEl.className = `inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${presence.color}`;
+            badgeEl.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${presence.dot}"></span> ${presence.label}`;
 
-            document.getElementById('modal-guest-name').textContent = guest.name || 'Sans Nom';
-            document.getElementById('modal-table-name').innerHTML = `
-                <i data-lucide="utensils" class="w-4 h-4 text-indigo-400"></i> 
-                ${guest.table_name || 'Table non assignée'}
-            `;
-
-            const badgeElem = document.getElementById('modal-status-badge');
-            badgeElem.className = `inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${presence.color}`;
-            badgeElem.innerHTML = `<span class="w-2 h-2 rounded-full ${presence.dot}"></span> Statut : ${presence.label}`;
-
-            document.getElementById('modal-drinks').textContent = guest.drinks || guest.boissons || 'Aucune préférence enregistrée';
-            document.getElementById('modal-songs').textContent = guest.songs || guest.chansons || guest.music || 'Aucun morceau suggéré';
-            document.getElementById('modal-message').textContent = guest.message || guest.mot || guest.note || 'Aucun message laissé';
+            document.getElementById('modal-guest-name').textContent = guest.name || 'Invité';
+            document.getElementById('modal-table-name').innerHTML = `<i data-lucide="utensils" class="w-4 h-4 text-slate-500"></i> ${guest.table_name || 'Table non assignée'}`;
+            
+            document.getElementById('modal-drinks').textContent = guest.drinks || guest.boissons || 'Aucune préférence de boisson renseignée.';
+            document.getElementById('modal-songs').textContent = guest.songs || guest.chansons || guest.music || 'Aucune chanson suggérée.';
+            document.getElementById('modal-message').textContent = guest.message || guest.mot || guest.note || 'Aucun message laissé pour les mariés.';
 
             document.getElementById('guest-modal').classList.remove('hidden');
             lucide.createIcons();
@@ -612,17 +611,10 @@
             document.getElementById('guest-modal').classList.add('hidden');
         }
 
-        document.getElementById('guest-modal').addEventListener('click', (e) => {
-            if (e.target.id === 'guest-modal') closeModal();
+        // Lancement au chargement de la page
+        window.addEventListener('DOMContentLoaded', () => {
+            fetchGuests();
         });
-
-        document.getElementById('drink-modal').addEventListener('click', (e) => {
-            if (e.target.id === 'drink-modal') closeDrinkModal();
-        });
-
-        document.getElementById('search-input').addEventListener('input', applyFilterAndRender);
-
-        fetchGuests();
     </script>
 </body>
 </html>
