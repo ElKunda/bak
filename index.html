@@ -17,6 +17,12 @@
             background-color: #0f172a;
             color: #f8fafc;
         }
+        .line-clamp-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
     </style>
 </head>
 <body class="min-h-screen p-4 md:p-8">
@@ -27,9 +33,9 @@
         <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-slate-800/60 p-6 rounded-2xl border border-slate-700/50 backdrop-blur-md">
             <div>
                 <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-indigo-400 to-pink-400 bg-clip-text text-transparent">
-                    Gestion des Invités & Tables
+                    Gestion des Invités & Événement
                 </h1>
-                <p class="text-slate-400 text-sm mt-1">Cliquez sur un invité pour afficher ses choix de boissons, chansons et son message.</p>
+                <p class="text-slate-400 text-sm mt-1">Consultez les tables, les choix de boissons, la playlist et les messages des invités.</p>
             </div>
             
             <!-- Statistiques rapides -->
@@ -46,32 +52,42 @@
         </header>
 
         <!-- Navigation par Onglets -->
-        <div class="flex border-b border-slate-700/60 gap-4 text-sm font-medium">
-            <button id="tab-guests-btn" onclick="switchMainTab('guests')" class="pb-3 border-b-2 border-indigo-500 text-indigo-400 flex items-center gap-2 transition">
+        <div class="flex flex-wrap border-b border-slate-700/60 gap-2 sm:gap-6 text-sm font-medium">
+            <button id="tab-guests-btn" onclick="switchMainTab('guests')" class="pb-3 border-b-2 border-indigo-500 text-indigo-400 flex items-center gap-2 transition px-1">
                 <i data-lucide="users" class="w-4 h-4"></i>
-                <span>Liste des Invités</span>
+                <span>Invités & Tables</span>
             </button>
-            <button id="tab-stats-btn" onclick="switchMainTab('stats')" class="pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 transition">
+            <button id="tab-drinks-btn" onclick="switchMainTab('drinks')" class="pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 transition px-1">
+                <i data-lucide="wine" class="w-4 h-4"></i>
+                <span>Boissons</span>
+            </button>
+            <button id="tab-music-btn" onclick="switchMainTab('music')" class="pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 transition px-1">
+                <i data-lucide="music" class="w-4 h-4"></i>
+                <span>Musiques</span>
+            </button>
+            <button id="tab-messages-btn" onclick="switchMainTab('messages')" class="pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 transition px-1">
+                <i data-lucide="message-square" class="w-4 h-4"></i>
+                <span>Messages</span>
+            </button>
+            <button id="tab-stats-btn" onclick="switchMainTab('stats')" class="pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 transition px-1">
                 <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
-                <span>Statistiques / Aperçu</span>
+                <span>Aperçu Presences</span>
             </button>
         </div>
 
-        <!-- CONTENU DE L'ONGLET 1 : LISTE DES INVITÉS -->
+        <!-- ONGLET 1 : LISTE DES INVITÉS & TABLES -->
         <div id="tab-content-guests" class="space-y-6">
-            <!-- Barre d'outils : Recherche + Bascule d'affichage -->
             <div class="flex flex-col sm:flex-row gap-3">
                 <div class="relative flex-1">
                     <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"></i>
                     <input 
                         type="text" 
                         id="search-input" 
-                        placeholder="Rechercher un invité, une table ou une boisson..." 
+                        placeholder="Rechercher un invité ou une table..." 
                         class="w-full pl-12 pr-4 py-3 bg-slate-800/80 rounded-xl border border-slate-700 focus:outline-none focus:border-indigo-500 text-slate-200 placeholder-slate-400 transition"
                     >
                 </div>
 
-                <!-- Commutateur de vue -->
                 <div class="flex bg-slate-800/80 p-1.5 rounded-xl border border-slate-700 self-start sm:self-auto">
                     <button id="view-grid-btn" onclick="setViewMode('grid')" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition bg-indigo-600 text-white">
                         <i data-lucide="layout-grid" class="w-4 h-4"></i>
@@ -84,7 +100,6 @@
                 </div>
             </div>
 
-            <!-- Zone d'affichage des cartes -->
             <main id="guests-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div class="col-span-full text-center py-12 text-slate-400">
                     <i data-lucide="loader-2" class="w-8 h-8 animate-spin mx-auto mb-2 text-indigo-400"></i>
@@ -93,7 +108,30 @@
             </main>
         </div>
 
-        <!-- CONTENU DE L'ONGLET 2 : STATISTIQUES GLOBALES -->
+        <!-- ONGLET 2 : BOISSONS -->
+        <div id="tab-content-drinks" class="hidden space-y-6">
+            <div class="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50 flex justify-between items-center">
+                <p class="text-sm text-slate-300">Sélectionnez une boisson pour voir qui l'a choisie.</p>
+                <span id="total-drinks-types" class="text-xs font-semibold px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full border border-indigo-500/30">0 variétés</span>
+            </div>
+            <div id="drinks-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </div>
+
+        <!-- ONGLET 3 : MUSIQUES -->
+        <div id="tab-content-music" class="hidden space-y-6">
+            <div class="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50 flex justify-between items-center">
+                <p class="text-sm text-slate-300">Liste des morceaux demandés par les invités (triés par nombre de votes).</p>
+                <span id="total-songs-count" class="text-xs font-semibold px-3 py-1 bg-pink-500/20 text-pink-300 rounded-full border border-pink-500/30">0 titres</span>
+            </div>
+            <div id="songs-list" class="space-y-3"></div>
+        </div>
+
+        <!-- ONGLET 4 : MESSAGES -->
+        <div id="tab-content-messages" class="hidden space-y-6">
+            <div id="messages-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </div>
+
+        <!-- ONGLET 5 : STATISTIQUES PRESENCE -->
         <div id="tab-content-stats" class="hidden space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="bg-slate-800/40 border border-slate-700/60 p-5 rounded-2xl">
@@ -113,25 +151,37 @@
 
     </div>
 
+    <!-- MODALE INVITÉS AYANT CHOISI UNE BOISSON SPECIFIQUE -->
+    <div id="drink-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl relative">
+            <button onclick="closeDrinkModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-lg bg-slate-800/60 transition">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <div class="flex items-center gap-3 border-b border-slate-800 pb-3">
+                <div class="p-2.5 bg-indigo-500/20 text-indigo-400 rounded-xl border border-indigo-500/30">
+                    <i data-lucide="wine" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h3 id="drink-modal-title" class="text-xl font-bold text-white"></h3>
+                    <p id="drink-modal-count" class="text-xs text-slate-400"></p>
+                </div>
+            </div>
+            <ul id="drink-modal-guests" class="space-y-2 max-h-60 overflow-y-auto pr-1"></ul>
+        </div>
+    </div>
+
     <!-- MODALE DE DÉTAILS DE L'INVITÉ -->
     <div id="guest-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-lg w-full p-6 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            
             <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-lg bg-slate-800/60 transition">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
-
-            <!-- En-tête Modale -->
             <div class="space-y-2">
                 <div id="modal-status-badge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"></div>
                 <h2 id="modal-guest-name" class="text-2xl font-bold text-white"></h2>
                 <p id="modal-table-name" class="text-sm text-slate-400 flex items-center gap-1.5"></p>
             </div>
-
-            <!-- Détails des Choix -->
             <div class="space-y-4 border-t border-slate-800 pt-4">
-                
-                <!-- Boissons -->
                 <div class="bg-slate-800/40 p-4 rounded-xl border border-slate-800">
                     <div class="flex items-center gap-2 text-indigo-400 font-semibold mb-2">
                         <i data-lucide="wine" class="w-4 h-4"></i>
@@ -139,8 +189,6 @@
                     </div>
                     <p id="modal-drinks" class="text-sm text-slate-300 italic"></p>
                 </div>
-
-                <!-- Morceaux de musique -->
                 <div class="bg-slate-800/40 p-4 rounded-xl border border-slate-800">
                     <div class="flex items-center gap-2 text-pink-400 font-semibold mb-2">
                         <i data-lucide="music" class="w-4 h-4"></i>
@@ -148,8 +196,6 @@
                     </div>
                     <p id="modal-songs" class="text-sm text-slate-300 italic"></p>
                 </div>
-
-                <!-- Message / Mot pour le mariage -->
                 <div class="bg-slate-800/40 p-4 rounded-xl border border-slate-800">
                     <div class="flex items-center gap-2 text-amber-400 font-semibold mb-2">
                         <i data-lucide="message-square" class="w-4 h-4"></i>
@@ -157,7 +203,6 @@
                     </div>
                     <p id="modal-message" class="text-sm text-slate-300 italic leading-relaxed"></p>
                 </div>
-
             </div>
         </div>
     </div>
@@ -169,9 +214,8 @@
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let allGuests = [];
-        let currentViewMode = 'grid'; // 'grid' ou 'grouped'
+        let currentViewMode = 'grid';
 
-        // Détection du type d'invité
         function getGuestType(name) {
             const clean = name ? name.trim() : '';
             if (/^Couple/i.test(clean)) {
@@ -183,7 +227,6 @@
             }
         }
 
-        // Obtention du badge visuel de présence
         function getPresenceBadge(status) {
             if (status === 'present' || status === 'confirmed' || status === true) {
                 return { label: 'Présent', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30', dot: 'bg-emerald-400' };
@@ -194,7 +237,6 @@
             }
         }
 
-        // Chargement Supabase
         async function fetchGuests() {
             try {
                 const { data, error } = await supabaseClient
@@ -207,6 +249,9 @@
                 allGuests = data || [];
                 updateStats(allGuests);
                 applyFilterAndRender();
+                renderDrinksTab();
+                renderMusicTab();
+                renderMessagesTab();
             } catch (err) {
                 console.error(err);
                 document.getElementById('guests-grid').innerHTML = `
@@ -222,7 +267,6 @@
             const uniqueTables = new Set(guests.map(g => g.table_name || 'Non assignée')).size;
             document.getElementById('tables-count').textContent = uniqueTables;
 
-            // Compteurs statut
             let confirmed = 0, declined = 0, pending = 0;
             guests.forEach(g => {
                 const s = g.status || g.attending || g.presence;
@@ -236,24 +280,19 @@
             document.getElementById('stat-pending').textContent = pending;
         }
 
-        // Bascule d'onglets principaux
         function switchMainTab(tab) {
-            const guestsTabBtn = document.getElementById('tab-guests-btn');
-            const statsTabBtn = document.getElementById('tab-stats-btn');
-            const guestsContent = document.getElementById('tab-content-guests');
-            const statsContent = document.getElementById('tab-content-stats');
-
-            if (tab === 'guests') {
-                guestsTabBtn.className = "pb-3 border-b-2 border-indigo-500 text-indigo-400 flex items-center gap-2 transition";
-                statsTabBtn.className = "pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 transition";
-                guestsContent.classList.remove('hidden');
-                statsContent.classList.add('hidden');
-            } else {
-                statsTabBtn.className = "pb-3 border-b-2 border-indigo-500 text-indigo-400 flex items-center gap-2 transition";
-                guestsTabBtn.className = "pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 transition";
-                statsContent.classList.remove('hidden');
-                guestsContent.classList.add('hidden');
-            }
+            const tabs = ['guests', 'drinks', 'music', 'messages', 'stats'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-${t}-btn`);
+                const content = document.getElementById(`tab-content-${t}`);
+                if (t === tab) {
+                    btn.className = "pb-3 border-b-2 border-indigo-500 text-indigo-400 flex items-center gap-2 transition px-1";
+                    content.classList.remove('hidden');
+                } else {
+                    btn.className = "pb-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2 transition px-1";
+                    content.classList.add('hidden');
+                }
+            });
         }
 
         function setViewMode(mode) {
@@ -276,8 +315,7 @@
             const query = document.getElementById('search-input').value.toLowerCase();
             const filtered = allGuests.filter(g => 
                 (g.name && g.name.toLowerCase().includes(query)) || 
-                (g.table_name && g.table_name.toLowerCase().includes(query)) ||
-                (g.drinks && g.drinks.toLowerCase().includes(query))
+                (g.table_name && g.table_name.toLowerCase().includes(query))
             );
 
             if (currentViewMode === 'grid') {
@@ -287,7 +325,6 @@
             }
         }
 
-        // Vue 1 : Grille Individuelle
         function renderGridView(guests) {
             const grid = document.getElementById('guests-grid');
             grid.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4";
@@ -307,7 +344,6 @@
                             <div class="space-y-1">
                                 <div class="flex items-center gap-2">
                                     <h3 class="font-semibold text-lg text-slate-100 hover:text-indigo-300 transition">${guest.name}</h3>
-                                    <!-- Badge Présence -->
                                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${presence.color}">
                                         <span class="w-1.5 h-1.5 rounded-full ${presence.dot}"></span>
                                         ${presence.label}
@@ -330,7 +366,6 @@
             lucide.createIcons();
         }
 
-        // Vue 2 : Groupé par Table
         function renderGroupedView(guests) {
             const grid = document.getElementById('guests-grid');
             grid.className = "grid grid-cols-1 md:grid-cols-2 gap-6";
@@ -386,7 +421,169 @@
             lucide.createIcons();
         }
 
-        // Affichage des détails d'un invité (Modale)
+        // --- GESTION DE L'ONGLET BOISSONS ---
+        function renderDrinksTab() {
+            const container = document.getElementById('drinks-grid');
+            const drinksMap = {};
+
+            allGuests.forEach(guest => {
+                const drinkStr = guest.drinks || guest.boissons;
+                if (drinkStr) {
+                    const list = drinkStr.split(/,|\//).map(s => s.trim()).filter(Boolean);
+                    list.forEach(drink => {
+                        const formatted = drink.charAt(0).toUpperCase() + drink.slice(1);
+                        if (!drinksMap[formatted]) drinksMap[formatted] = [];
+                        drinksMap[formatted].push(guest);
+                    });
+                }
+            });
+
+            const sortedDrinks = Object.entries(drinksMap).sort((a, b) => b[1].length - a[1].length);
+            document.getElementById('total-drinks-types').textContent = `${sortedDrinks.length} choix différents`;
+
+            if (sortedDrinks.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500">Aucun choix de boisson enregistré.</div>`;
+                return;
+            }
+
+            window.drinksMap = drinksMap;
+
+            container.innerHTML = sortedDrinks.map(([drink, guests]) => {
+                return `
+                    <div onclick="openDrinkGuestsModal('${drink}')" class="cursor-pointer bg-slate-800/40 hover:bg-slate-800/90 border border-slate-700/60 p-5 rounded-2xl transition hover:border-indigo-500/50 flex items-center justify-between">
+                        <div class="space-y-1">
+                            <h3 class="font-semibold text-lg text-slate-100">${drink}</h3>
+                            <p class="text-xs text-indigo-400">Cliquez pour voir la liste</p>
+                        </div>
+                        <span class="text-2xl font-black text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1.5 rounded-xl">
+                            ${guests.length}
+                        </span>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        function openDrinkGuestsModal(drinkName) {
+            const guests = window.drinksMap[drinkName] || [];
+            document.getElementById('drink-modal-title').textContent = drinkName;
+            document.getElementById('drink-modal-count').textContent = `${guests.length} invité(s) ont choisi cette boisson`;
+            
+            const list = document.getElementById('drink-modal-guests');
+            list.innerHTML = guests.map(g => `
+                <li class="p-2.5 bg-slate-800/60 rounded-xl border border-slate-700/50 text-sm text-slate-200 flex justify-between items-center">
+                    <span class="font-medium">${g.name}</span>
+                    <span class="text-xs text-slate-400">${g.table_name || 'Sans table'}</span>
+                </li>
+            `).join('');
+
+            document.getElementById('drink-modal').classList.remove('hidden');
+        }
+
+        function closeDrinkModal() {
+            document.getElementById('drink-modal').classList.add('hidden');
+        }
+
+        // --- GESTION DE L'ONGLET MUSIQUE ---
+        function renderMusicTab() {
+            const container = document.getElementById('songs-list');
+            const songsMap = {};
+
+            allGuests.forEach(guest => {
+                const songStr = guest.songs || guest.chansons || guest.music;
+                if (songStr) {
+                    const list = songStr.split(/,|\n|\//).map(s => s.trim()).filter(Boolean);
+                    list.forEach(song => {
+                        const key = song.toLowerCase();
+                        if (!songsMap[key]) {
+                            songsMap[key] = { originalName: song, count: 0, requestedBy: [] };
+                        }
+                        songsMap[key].count++;
+                        songsMap[key].requestedBy.push(guest.name);
+                    });
+                }
+            });
+
+            const sortedSongs = Object.values(songsMap).sort((a, b) => b.count - a.count);
+            document.getElementById('total-songs-count').textContent = `${sortedSongs.length} titre(s) au total`;
+
+            if (sortedSongs.length === 0) {
+                container.innerHTML = `<div class="text-center py-12 text-slate-500">Aucune chanson suggérée pour le moment.</div>`;
+                return;
+            }
+
+            container.innerHTML = sortedSongs.map(item => `
+                <div class="bg-slate-800/40 border border-slate-700/60 p-4 rounded-xl flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2.5 bg-pink-500/10 text-pink-400 rounded-xl border border-pink-500/20">
+                            <i data-lucide="disc" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-slate-200">${item.originalName}</h4>
+                            <p class="text-xs text-slate-400 mt-0.5">Suggéré par : ${item.requestedBy.join(', ')}</p>
+                        </div>
+                    </div>
+                    ${item.count > 1 ? `
+                        <span class="bg-pink-500/20 text-pink-300 border border-pink-500/30 font-bold text-xs px-2.5 py-1 rounded-full whitespace-nowrap">
+                            x${item.count}
+                        </span>
+                    ` : ''}
+                </div>
+            `).join('');
+
+            lucide.createIcons();
+        }
+
+        // --- GESTION DE L'ONGLET MESSAGES ---
+        function renderMessagesTab() {
+            const container = document.getElementById('messages-grid');
+            const messages = allGuests.filter(g => (g.message || g.mot || g.note) && (g.message || g.mot || g.note).trim() !== '');
+
+            if (messages.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500">Aucun message laissé par les invités.</div>`;
+                return;
+            }
+
+            container.innerHTML = messages.map(guest => {
+                const msg = guest.message || guest.mot || guest.note;
+                return `
+                    <div class="bg-slate-800/40 border border-slate-700/60 p-5 rounded-2xl flex flex-col justify-between space-y-3">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center pb-2 border-b border-slate-700/50">
+                                <h4 class="font-bold text-slate-200">${guest.name}</h4>
+                                <span class="text-xs text-slate-400">${guest.table_name || 'Sans table'}</span>
+                            </div>
+                            <p id="msg-text-${guest.id}" class="text-sm text-slate-300 italic leading-relaxed line-clamp-3">
+                                "${msg}"
+                            </p>
+                        </div>
+                        ${msg.length > 120 ? `
+                            <button onclick="toggleMessage('${guest.id}')" id="msg-btn-${guest.id}" class="text-xs text-indigo-400 font-semibold self-start hover:underline focus:outline-none">
+                                Voir plus
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        function toggleMessage(id) {
+            const textElem = document.getElementById(`msg-text-${id}`);
+            const btnElem = document.getElementById(`msg-btn-${id}`);
+
+            if (textElem.classList.contains('line-clamp-3')) {
+                textElem.classList.remove('line-clamp-3');
+                btnElem.textContent = 'Réduire';
+            } else {
+                textElem.classList.add('line-clamp-3');
+                btnElem.textContent = 'Voir plus';
+            }
+        }
+
+        // --- MODALE DETAIL INVITÉ ---
         function openGuestDetails(guestId) {
             const guest = allGuests.find(g => String(g.id) === String(guestId));
             if (!guest) return;
@@ -415,15 +612,16 @@
             document.getElementById('guest-modal').classList.add('hidden');
         }
 
-        // Fermeture de la modale en cliquant à l'extérieur
         document.getElementById('guest-modal').addEventListener('click', (e) => {
             if (e.target.id === 'guest-modal') closeModal();
         });
 
-        // Événement recherche
+        document.getElementById('drink-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'drink-modal') closeDrinkModal();
+        });
+
         document.getElementById('search-input').addEventListener('input', applyFilterAndRender);
 
-        // Initialisation
         fetchGuests();
     </script>
 </body>
