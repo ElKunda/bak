@@ -235,20 +235,31 @@
 
             <form onsubmit="handleAddNewGuest(event)" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-300 mb-1">Nom complet *</label>
-                    <input type="text" id="new-nom" required placeholder="Ex: Jean Dupont" class="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500">
-                </div>
-                <div>
                     <label class="block text-xs font-semibold text-slate-300 mb-1">Genre / Catégorie</label>
-                    <select id="new-genre" class="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500">
+                    <select id="new-genre" onchange="toggleCoupleFields()" class="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500">
                         <option value="Monsieur">Monsieur</option>
                         <option value="Madame">Madame</option>
                         <option value="Couple">Couple</option>
                     </select>
                 </div>
+                
+                <!-- Nom 1 -->
+                <div>
+                    <label id="label-nom-1" class="block text-xs font-semibold text-slate-300 mb-1">Nom complet *</label>
+                    <input type="text" id="new-nom-1" required placeholder="Ex: Jean Dupont" class="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <!-- Nom 2 (Affiché uniquement si Couple) -->
+                <div id="container-nom-2" class="hidden">
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Nom complet du conjoint(e) *</label>
+                    <input type="text" id="new-nom-2" placeholder="Ex: Marie Dupont" class="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500">
+                </div>
+
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 mb-1">Table attribuée</label>
-                    <input type="text" id="new-table" placeholder="Ex: Table d'honneur" class="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500" value="Table générale">
+                    <select id="new-table" class="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500">
+                        <option value="Table générale">Table générale</option>
+                    </select>
                 </div>
                 <button type="submit" id="submit-btn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition">
                     Enregistrer l'invité
@@ -292,6 +303,7 @@
                 if (error) throw error;
                 allGuests = data || [];
                 updateStats(allGuests);
+                updateTablesDropdown(allGuests);
                 applyFilterAndRender();
                 renderDrinksTab();
                 renderMusicTab();
@@ -319,6 +331,17 @@
             document.getElementById('stat-declined').textContent = declined;
             document.getElementById('stat-pending').textContent = pending;
         }
+
+        // --- REMPLISSAGE AUTOMATIQUE DE LA LISTE DÉROULANTE DES TABLES ---
+        function updateTablesDropdown(guests) {
+            const tableSelect = document.getElementById('new-table');
+            const uniqueTables = Array.from(new Set(guests.map(g => g.table_attribuee || 'Table générale'))).sort();
+            
+            tableSelect.innerHTML = uniqueTables.map(tableName => `
+                <option value="${tableName}">${tableName}</option>
+            `).join('');
+        }
+
         function switchMainTab(tab) {
             const tabs = ['guests', 'drinks', 'music', 'messages', 'stats'];
             tabs.forEach(t => {
@@ -597,7 +620,7 @@
             document.getElementById('modal-guest-name').textContent = guest.nom_complet || 'Invité';
             document.getElementById('modal-table-name').innerHTML = `<i data-lucide="utensils" class="w-4 h-4 text-slate-500"></i> ${guest.table_attribuee || 'Table générale'}`;
             
-            // Génération et injection du lien personnalisé
+            // Génération et injection du lien personnalisé vers le site d'invitation
             const currentUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
             const inviteLink = `${currentUrl}invitation.html?nom=${encodeURIComponent(guest.nom_complet)}`;
             document.getElementById('modal-invite-link').value = inviteLink;
@@ -615,7 +638,7 @@
             document.getElementById('guest-modal').classList.add('hidden');
         }
 
-        // --- FONCTIONS POUR L'AJOUT D'UN INVITÉ ---
+        // --- FONCTIONS POUR L'AJOUT D'UN INVITÉ & GESTION DU COUPLE ---
         function openAddGuestModal() {
             document.getElementById('add-guest-modal').classList.remove('hidden');
         }
@@ -624,17 +647,43 @@
             document.getElementById('add-guest-modal').classList.add('hidden');
         }
 
+        function toggleCoupleFields() {
+            const genre = document.getElementById('new-genre').value;
+            const containerNom2 = document.getElementById('container-nom-2');
+            const labelNom1 = document.getElementById('label-nom-1');
+            const inputNom2 = document.getElementById('new-nom-2');
+
+            if (genre === 'Couple') {
+                containerNom2.classList.remove('hidden');
+                inputNom2.required = true;
+                labelNom1.textContent = 'Nom complet (Personne 1) *';
+            } else {
+                containerNom2.classList.add('hidden');
+                inputNom2.required = false;
+                inputNom2.value = '';
+                labelNom1.textContent = 'Nom complet *';
+            }
+        }
+
         async function handleAddNewGuest(event) {
             event.preventDefault();
             const submitBtn = document.getElementById('submit-btn');
             submitBtn.disabled = true;
             submitBtn.textContent = "Enregistrement...";
 
-            const nom_complet = document.getElementById('new-nom').value.trim();
             const genre = document.getElementById('new-genre').value;
-            const table_attribuee = document.getElementById('new-table').value.trim() || 'Table générale';
+            const nom1 = document.getElementById('new-nom-1').value.trim();
+            const nom2 = document.getElementById('new-nom-2').value.trim();
+            const table_attribuee = document.getElementById('new-table').value;
+
+            // Si c'est un couple, on combine les noms proprement pour l'enregistrement (ex: "Jean Dupont & Marie Dupont")
+            let nom_complet = nom1;
+            if (genre === 'Couple' && nom2) {
+                nom_complet = `${nom1} & ${nom2}`;
+            }
 
             try {
+                // Enregistrement direct dans Supabase
                 const { error } = await supabaseClient
                     .from('guest')
                     .insert([{ nom_complet, genre, table_attribuee }]);
@@ -643,7 +692,8 @@
 
                 closeAddGuestModal();
                 event.target.reset();
-                await fetchGuests(); // Recharge la liste proprement
+                toggleCoupleFields(); // Réinitialise l'affichage du champ couple
+                await fetchGuests(); // Recharge la liste et met à jour les stats/tables
             } catch (err) {
                 alert("Erreur : " + err.message);
             } finally {
