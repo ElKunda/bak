@@ -57,6 +57,7 @@
                 </button>
             </div>
         </header>
+
         <!-- Navigation par Onglets -->
         <div class="flex flex-wrap border-b border-slate-700/60 gap-2 sm:gap-6 text-sm font-medium">
             <button id="tab-guests-btn" onclick="switchMainTab('guests')" class="pb-3 border-b-2 border-indigo-500 text-indigo-400 flex items-center gap-2 transition px-1">
@@ -80,6 +81,7 @@
                 <span>Aperçu Présences</span>
             </button>
         </div>
+
         <!-- ONGLET 1 : LISTE DES INVITÉS & TABLES -->
         <div id="tab-content-guests" class="space-y-6">
             <div class="flex flex-col sm:flex-row gap-3">
@@ -111,6 +113,7 @@
                 </div>
             </main>
         </div>
+
         <!-- ONGLET 2 : BOISSONS -->
         <div id="tab-content-drinks" class="hidden space-y-6">
             <div class="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50 flex justify-between items-center">
@@ -119,6 +122,7 @@
             </div>
             <div id="drinks-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
         </div>
+
         <!-- ONGLET 3 : MUSIQUES -->
         <div id="tab-content-music" class="hidden space-y-6">
             <div class="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50 flex justify-between items-center">
@@ -127,10 +131,12 @@
             </div>
             <div id="songs-list" class="space-y-3"></div>
         </div>
+
         <!-- ONGLET 4 : MESSAGES -->
         <div id="tab-content-messages" class="hidden space-y-6">
             <div id="messages-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
         </div>
+
         <!-- ONGLET 5 : STATISTIQUES PRESENCE -->
         <div id="tab-content-stats" class="hidden space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -149,6 +155,7 @@
             </div>
         </div>
     </div>
+
     <!-- MODALE INVITÉS AYANT CHOISI UNE BOISSON SPECIFIQUE -->
     <div id="drink-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl relative">
@@ -167,6 +174,7 @@
             <ul id="drink-modal-guests" class="space-y-2 max-h-60 overflow-y-auto pr-1"></ul>
         </div>
     </div>
+
     <!-- MODALE DE DÉTAILS DE L'INVITÉ -->
     <div id="guest-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-lg w-full p-6 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
@@ -213,6 +221,42 @@
                     </div>
                     <p id="modal-message" class="text-sm text-slate-300 italic leading-relaxed"></p>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALE DE PARTAGE RAPIDE WHATSAPP / AUTRES -->
+    <div id="share-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl relative">
+            <button onclick="closeShareModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-lg bg-slate-800/60 transition">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <div class="flex items-center gap-3 border-b border-slate-800 pb-3">
+                <div class="p-2.5 bg-emerald-500/20 text-emerald-400 rounded-xl border border-emerald-500/30">
+                    <i data-lucide="share-2" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-white">Partager l'invitation</h3>
+                    <p id="share-modal-subtitle" class="text-xs text-slate-400"></p>
+                </div>
+            </div>
+
+            <div class="space-y-3 pt-2">
+                <!-- Option WhatsApp -->
+                <a id="share-whatsapp-btn" href="#" target="_blank" class="w-full flex items-center justify-between p-3.5 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 rounded-xl text-emerald-300 font-semibold transition">
+                    <span class="flex items-center gap-2.5">
+                        <i data-lucide="message-circle" class="w-5 h-5 text-emerald-400"></i> Envoyer via WhatsApp
+                    </span>
+                    <i data-lucide="external-link" class="w-4 h-4 text-emerald-400"></i>
+                </a>
+
+                <!-- Option Copier le lien -->
+                <button onclick="copyShareModalLink()" class="w-full flex items-center justify-between p-3.5 bg-slate-800 hover:bg-slate-700/80 border border-slate-700 rounded-xl text-slate-200 font-semibold transition">
+                    <span class="flex items-center gap-2.5">
+                        <i data-lucide="copy" class="w-5 h-5 text-indigo-400"></i> Copier le lien d'invitation
+                    </span>
+                    <span id="copy-feedback" class="text-xs text-indigo-400">Copier</span>
+                </button>
             </div>
         </div>
     </div>
@@ -275,6 +319,7 @@
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let allGuests = [];
         let currentViewMode = 'grid';
+
         function getGuestType(genre) {
             const clean = genre ? genre.trim().toLowerCase() : '';
             if (clean.includes('couple')) {
@@ -285,6 +330,7 @@
                 return { label: 'Monsieur', color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20', icon: 'user' };
             }
         }
+
         function getPresenceBadge(present) {
             if (present === true) {
                 return { label: 'Présent', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30', dot: 'bg-emerald-400' };
@@ -294,6 +340,7 @@
                 return { label: 'En attente', color: 'bg-amber-500/10 text-amber-400 border-amber-500/30', dot: 'bg-amber-400 animate-pulse' };
             }
         }
+
         async function fetchGuests() {
             try {
                 const { data, error } = await supabaseClient
@@ -317,6 +364,7 @@
                 `;
             }
         }
+
         function updateStats(guests) {
             document.getElementById('total-count').textContent = guests.length;
             const uniqueTables = new Set(guests.map(g => g.table_attribuee || 'Table générale')).size;
@@ -332,7 +380,6 @@
             document.getElementById('stat-pending').textContent = pending;
         }
 
-        // --- REMPLISSAGE AUTOMATIQUE DE LA LISTE DÉROULANTE DES TABLES ---
         function updateTablesDropdown(guests) {
             const tableSelect = document.getElementById('new-table');
             const uniqueTables = Array.from(new Set(guests.map(g => g.table_attribuee || 'Table générale'))).sort();
@@ -356,6 +403,7 @@
                 }
             });
         }
+
         function setViewMode(mode) {
             currentViewMode = mode;
             const gridBtn = document.getElementById('view-grid-btn');
@@ -369,6 +417,7 @@
             }
             applyFilterAndRender();
         }
+
         function applyFilterAndRender() {
             const query = document.getElementById('search-input').value.toLowerCase();
             const filtered = allGuests.filter(g => 
@@ -381,6 +430,7 @@
                 renderGroupedView(filtered);
             }
         }
+
         function renderGridView(guests) {
             const grid = document.getElementById('guests-grid');
             grid.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4";
@@ -392,9 +442,9 @@
                 const type = getGuestType(guest.genre);
                 const presence = getPresenceBadge(guest.present);
                 return `
-                    <div onclick="openGuestDetails('${guest.id}')" class="cursor-pointer bg-slate-800/40 hover:bg-slate-800/90 border border-slate-700/60 p-5 rounded-2xl transition duration-200 hover:border-indigo-500/50 flex flex-col justify-between space-y-4">
+                    <div class="bg-slate-800/40 border border-slate-700/60 p-5 rounded-2xl transition duration-200 hover:border-indigo-500/50 flex flex-col justify-between space-y-4">
                         <div class="flex items-start justify-between gap-2">
-                            <div class="space-y-1">
+                            <div class="space-y-1 cursor-pointer flex-1" onclick="openGuestDetails('${guest.id}')">
                                 <div class="flex items-center gap-2">
                                     <h3 class="font-semibold text-lg text-slate-100 hover:text-indigo-300 transition">${guest.nom_complet}</h3>
                                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${presence.color}">
@@ -407,16 +457,23 @@
                                     ${guest.table_attribuee || 'Table générale'}
                                 </p>
                             </div>
-                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border ${type.color}">
-                                <i data-lucide="${type.icon}" class="w-3 h-3"></i>
-                                ${type.label}
-                            </span>
+                            <div class="flex items-center gap-1.5">
+                                <!-- Bouton Partager rapide WhatsApp -->
+                                <button onclick="openShareModal('${encodeURIComponent(guest.nom_complet)}')" title="Partager l'invitation" class="p-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-xl transition">
+                                    <i data-lucide="share-2" class="w-4 h-4"></i>
+                                </button>
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border ${type.color}">
+                                    <i data-lucide="${type.icon}" class="w-3 h-3"></i>
+                                    ${type.label}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 `;
             }).join('');
             lucide.createIcons();
         }
+
         function renderGroupedView(guests) {
             const grid = document.getElementById('guests-grid');
             grid.className = "grid grid-cols-1 md:grid-cols-2 gap-6";
@@ -448,15 +505,22 @@
                             ${tableGuests.map(guest => {
                                 const presence = getPresenceBadge(guest.present);
                                 return `
-                                    <li onclick="openGuestDetails('${guest.id}')" class="cursor-pointer flex items-center justify-between p-2.5 bg-slate-900/60 rounded-xl border border-slate-800 hover:border-indigo-500/50 hover:bg-slate-800/80 transition">
-                                        <div class="flex items-center gap-2">
+                                    <li class="flex items-center justify-between p-2.5 bg-slate-900/60 rounded-xl border border-slate-800 hover:border-indigo-500/50 hover:bg-slate-800/80 transition">
+                                        <div onclick="openGuestDetails('${guest.id}')" class="cursor-pointer flex items-center gap-2 flex-1">
                                             <span class="text-sm text-slate-200 font-medium hover:text-indigo-300">${guest.nom_complet}</span>
                                             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${presence.color}">
                                                 <span class="w-1.5 h-1.5 rounded-full ${presence.dot}"></span>
                                                 ${presence.label}
                                             </span>
                                         </div>
-                                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500"></i>
+                                        <div class="flex items-center gap-2">
+                                            <button onclick="openShareModal('${encodeURIComponent(guest.nom_complet)}')" title="Partager" class="p-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-lg transition">
+                                                <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+                                            </button>
+                                            <button onclick="openGuestDetails('${guest.id}')" class="text-slate-500 hover:text-slate-300">
+                                                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                                            </button>
+                                        </div>
                                     </li>
                                 `;
                             }).join('')}
@@ -466,6 +530,7 @@
             }).join('');
             lucide.createIcons();
         }
+
         // --- GESTION DE L'ONGLET BOISSONS ---
         function renderDrinksTab() {
             const container = document.getElementById('drinks-grid');
@@ -503,6 +568,7 @@
             }).join('');
             lucide.createIcons();
         }
+
         function openDrinkGuestsModal(drinkName) {
             const guests = window.drinksMap[drinkName] || [];
             document.getElementById('drink-modal-title').textContent = drinkName;
@@ -517,9 +583,11 @@
             `).join('');
             document.getElementById('drink-modal').classList.remove('hidden');
         }
+
         function closeDrinkModal() {
             document.getElementById('drink-modal').classList.add('hidden');
         }
+
         // --- GESTION DE L'ONGLET MUSIQUE ---
         function renderMusicTab() {
             const container = document.getElementById('songs-list');
@@ -566,6 +634,7 @@
             `).join('');
             lucide.createIcons();
         }
+
         // --- GESTION DE L'ONGLET MESSAGES ---
         function renderMessagesTab() {
             const container = document.getElementById('messages-grid');
@@ -597,6 +666,7 @@
             }).join('');
             lucide.createIcons();
         }
+
         function toggleMessage(id) {
             const textElem = document.getElementById(`msg-text-${id}`);
             const btnElem = document.getElementById(`msg-btn-${id}`);
@@ -608,6 +678,7 @@
                 btnElem.textContent = 'Voir plus';
             }
         }
+
         // --- MODALE DETAIL INVITÉ ---
         function openGuestDetails(guestId) {
             const guest = allGuests.find(g => String(g.id) === String(guestId));
@@ -620,9 +691,8 @@
             document.getElementById('modal-guest-name').textContent = guest.nom_complet || 'Invité';
             document.getElementById('modal-table-name').innerHTML = `<i data-lucide="utensils" class="w-4 h-4 text-slate-500"></i> ${guest.table_attribuee || 'Table générale'}`;
             
-            // Génération et injection du lien personnalisé vers le site d'invitation
-            const currentUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
-            const inviteLink = `${currentUrl}invitation.html?nom=${encodeURIComponent(guest.nom_complet)}`;
+            // Génération et injection du lien personnalisé vers le site d'invitation (steve-joyce.ideeal.site)
+            const inviteLink = `https://steve-joyce.ideeal.site/?nom=${encodeURIComponent(guest.nom_complet)}`;
             document.getElementById('modal-invite-link').value = inviteLink;
 
             document.getElementById('modal-drinks').textContent = guest.boisson || 'Aucune préférence de boisson renseignée.';
@@ -634,8 +704,39 @@
             document.getElementById('guest-modal').classList.remove('hidden');
             lucide.createIcons();
         }
+
         function closeModal() {
             document.getElementById('guest-modal').classList.add('hidden');
+        }
+
+        // --- GESTION DU PARTAGE RAPIDE (WHATSAPP & LIEN) ---
+        let currentShareLink = '';
+
+        function openShareModal(encodedName) {
+            const guestName = decodeURIComponent(encodedName);
+            currentShareLink = `https://steve-joyce.ideeal.site/?nom=${encodedName}`;
+            
+            document.getElementById('share-modal-subtitle').textContent = `Invité(e) : ${guestName}`;
+            
+            // Message pré-rempli pour WhatsApp
+            const message = encodeURIComponent(`Bonjour ${guestName}, nous avons le plaisir de vous inviter à notre mariage. Découvrez votre invitation personnalisée ici : ${currentShareLink}`);
+            document.getElementById('share-whatsapp-btn').href = `https://api.whatsapp.com/send?text=${message}`;
+            
+            document.getElementById('share-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeShareModal() {
+            document.getElementById('share-modal').classList.add('hidden');
+            document.getElementById('copy-feedback').textContent = 'Copier';
+        }
+
+        function copyShareModalLink() {
+            navigator.clipboard.writeText(currentShareLink);
+            document.getElementById('copy-feedback').textContent = 'Copié !';
+            setTimeout(() => {
+                document.getElementById('copy-feedback').textContent = 'Copier';
+            }, 2000);
         }
 
         // --- FONCTIONS POUR L'AJOUT D'UN INVITÉ & GESTION DU COUPLE ---
@@ -676,14 +777,12 @@
             const nom2 = document.getElementById('new-nom-2').value.trim();
             const table_attribuee = document.getElementById('new-table').value;
 
-            // Si c'est un couple, on combine les noms proprement pour l'enregistrement (ex: "Jean Dupont & Marie Dupont")
             let nom_complet = nom1;
             if (genre === 'Couple' && nom2) {
                 nom_complet = `${nom1} & ${nom2}`;
             }
 
             try {
-                // Enregistrement direct dans Supabase
                 const { error } = await supabaseClient
                     .from('guest')
                     .insert([{ nom_complet, genre, table_attribuee }]);
@@ -692,8 +791,8 @@
 
                 closeAddGuestModal();
                 event.target.reset();
-                toggleCoupleFields(); // Réinitialise l'affichage du champ couple
-                await fetchGuests(); // Recharge la liste et met à jour les stats/tables
+                toggleCoupleFields();
+                await fetchGuests();
             } catch (err) {
                 alert("Erreur : " + err.message);
             } finally {
@@ -702,7 +801,6 @@
             }
         }
 
-        // --- FONCTION POUR COPIER LE LIEN ---
         function copyInviteLink() {
             const input = document.getElementById('modal-invite-link');
             input.select();
